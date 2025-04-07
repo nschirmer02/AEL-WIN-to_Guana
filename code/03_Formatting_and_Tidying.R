@@ -1,48 +1,22 @@
-
-#Loading packages----
-library(readr)
-library(readxl)
-library(openxlsx)
-library(dplyr)
-library(lubridate)
-library(arsenal)
-
 #Loading in AEL WIN data and GTMNERR Masterdata
-win <- xlsx::read.xlsx("C:/Users/schirmer_n/Documents/Data/Guana_data/WIN_files/02.2025.WIN.xlsx", 1)
-field <- xlsx::read.xlsx("C:/Users/schirmer_n/Documents/Data/Guana_data/2025.Field.xlsx", 1)
-
-###RUN FIRST: check if there are any Result Comments, StationCodes, or Results Qualifiers not recognized in the code----
-#StationCodes = GTMGRNUT, GTMRNNUT, GTMLSNUT, GTMLMNUT, GTMGL2NUT, GTMMKNUT. Any misspellings or inclusions of other sites may generate errors
-#Filters out non-Sample location IDs 
-win_gtm <- win %>% 
-  filter(substr(Monitoring.Location.ID, 1, 1) == "G")
-#Displays all StationCodes
-unique(win_gtm$Monitoring.Location.ID)
-
-#Results Comments = "J4" - The RPD in the replicate sample duplicate was outside control criteria. Estimated Result / "Q" - Exceeded sample time 
-print(unique(win$Reslt.Comments))
-
-#Results Qualifiers = "U" - Below MDL/ "I" - Below PQL, above PQL
-print(unique(win$Value.Qualifier))
-#if any other values are printed consult the lab results .pdf sheet and update code/metadata with new comments
-###----
-
+win <- readxl::read_excel(here::here("data", "02.2025.WIN.xlsx"), 1)
+field <- readxl::read_excel(here::here("data", "2025.Field.xlsx"), 1)
 
 #Renaming columns in WIN data to names used in Masterdata and filtering non-sample data from lab data----
 nut_sites <- unique(field$StationCode[!field$StationCode %in% c("GTMGR1NUT", "GTMGL4NUT")])
 
 win2 <- win %>% 
-  rename(StationCode = Monitoring.Location.ID,
-         ComponentLong = Org.Analyte.Name,
-         Result = Org.Result.Value,
-         Unit = Org.Result.Unit,
-         MDL = Org.MDL,
-         PQL = Org.PQL,
-         ResultsQualifier = Value.Qualifier,
-         AnalysisMethod = Analysis.Method,
-         ActivityType = Activity.Type, 
-         SampleDate = Activity.Start.Date.Time, 
-         DateAnalyzed = Analysis.Date.Time
+  rename(StationCode = 'Monitoring Location ID',
+         ComponentLong = 'Org Analyte Name',
+         Result = 'Org Result Value',
+         Unit = 'Org Result Unit',
+         MDL = 'Org MDL',
+         PQL = 'Org PQL',
+         ResultsQualifier = 'Value Qualifier',
+         AnalysisMethod = 'Analysis Method',
+         ActivityType = 'Activity Type', 
+         SampleDate = 'Activity Start Date Time', 
+         DateAnalyzed = 'Analysis Date Time'
   ) %>% 
   filter(StationCode %in% nut_sites)
 
@@ -54,8 +28,8 @@ win3 <- win2 %>%
          ComponentLong = case_when(
                                    ComponentLong == "Ammonia (N)" ~ "Ammonium, Filtered", 
                                    ComponentLong == "Enterococci (MPN)" ~ "Enterococcus", 
-                                   ComponentLong == "Nitrogen- Total Kjeldahl" & Sample.Fraction == "Dissolved" ~ "Total Kjeldahl Nitrogen Filtered", 
-                                   ComponentLong == "Nitrogen- Total Kjeldahl" & Sample.Fraction == "Total" ~ "Total Kjeldahl Nitrogen", 
+                                   ComponentLong == "Nitrogen- Total Kjeldahl" & 'Sample Fraction' == "Dissolved" ~ "Total Kjeldahl Nitrogen Filtered", 
+                                   ComponentLong == "Nitrogen- Total Kjeldahl" & 'Sample Fraction' == "Total" ~ "Total Kjeldahl Nitrogen", 
                                    ComponentLong == "Chlorophyll a- uncorrected" ~ "Chlorophyll a, Uncorrected (Trichromatic)", 
                                    ComponentLong == "Chlorophyll a- corrected" ~ "Chlorophyll a, Corrected (Monochromatic)", 
                                    ComponentLong == "Orthophosphate (P)" ~ "Orthophosphate", 
@@ -65,8 +39,8 @@ win3 <- win2 %>%
         
          ComponentShort = case_when(ComponentLong == "Ammonium, Filtered" ~ "NH4F", 
                                     ComponentLong == "Enterococcus" ~ "ENTERO", 
-                                    ComponentLong == "Total Kjeldahl Nitrogen Filtered" & Sample.Fraction == "Dissolved" ~ "TKNF", 
-                                    ComponentLong == "Total Kjeldahl Nitrogen" & Sample.Fraction == "Total" ~ "TKN", 
+                                    ComponentLong == "Total Kjeldahl Nitrogen Filtered" & 'Sample Fraction' == "Dissolved" ~ "TKNF", 
+                                    ComponentLong == "Total Kjeldahl Nitrogen" & 'Sample Fraction' == "Total" ~ "TKN", 
                                     ComponentLong == "Chlorophyll a, Uncorrected (Trichromatic)" ~ "CHLa_UnC", 
                                     ComponentLong == "Chlorophyll a, Corrected (Monochromatic)" ~ "CHLa_C", 
                                     ComponentLong == "Orthophosphate" ~ "PO4", 
@@ -74,7 +48,7 @@ win3 <- win2 %>%
                                     ComponentLong == "Total Phosphorus" ~ "TP"
                                     ), 
          
-         SampleDate = openxlsx::convertToDateTime(SampleDate, tz = "EST"), 
+         SampleDate = lubridate::force_tz(SampleDate, tzone = "EST"), 
          
          Laboratory = "AEL", 
          
@@ -102,8 +76,8 @@ win3 <- win2 %>%
 
 #Merging Result.Comments with ResultsQualifier----
 ##If there are any other values in the Result.Comments column copy the below code and replace "" values with the code
-win3$ResultsQualifier[win3$Result.Comments == "J4"] <- "J4"
-win3$ResultsQualifier[win3$Result.Comments == "Q"] <- "Q"
+win3$ResultsQualifier[win3$'Result Comments' == "J4"] <- "J4"
+win3$ResultsQualifier[win3$'Result Comments' == "Q"] <- "Q"
 
 win4 <- win3 %>% 
   mutate(
@@ -127,7 +101,7 @@ win4 <- win3 %>%
 
 field_ready <- field %>% 
   rename(
-    Lab.Accreditation.Authority = Lab.Accredidation.Authority
+    'Lab Accreditation Authority' = 'Lab Accredidation Authority'
   )
 
 ###----
@@ -154,8 +128,8 @@ win_final <- win4 %>%
          DateReceived, 
          DateAnalyzed, 
          AnalysisMethod, 
-         Lab.ID, 
-         Lab.Accreditation.Authority, 
+         'Lab ID', 
+         'Lab Accreditation Authority', 
          Laboratory, 
          'RQ#', 
          QAQC, 
@@ -167,8 +141,7 @@ win_final <- win4 %>%
 #Converting columns into POSIXct format to allow for binding of field_ready and win_final dataframes----
 win_format <- win_final %>% 
   mutate(
-    DateReceived = parse_date_time2(DateReceived, "m/d/Y H:M", tz = "EST"),
-    SampleDate = lubridate::force_tz(SampleDate, tzone = "EST"), 
+    DateAnalyzed = force_tz(DateAnalyzed, tzone = "EST"),
     UNID = as.double(UNID), 
     Result = as.character(Result)
   ) 
@@ -176,10 +149,8 @@ win_format <- win_final %>%
 
 field_format <- field_ready %>% 
   mutate(
-    F_Record = as.character(F_Record)
-  ) %>% 
-  rename(
-    'RQ#' = RQ.
+    F_Record = as.character(F_Record), 
+    DateAnalyzed = convertToDateTime(DateAnalyzed, origin = "1900-01-01", tz = "America/Jamaica"), 
   )
 
 ###----
@@ -190,7 +161,7 @@ win_field$StationCode <- as.character(win_field$StationCode)
 
 #arranging rows to conform with previous formatting
 win_field_format <- win_field %>% 
-  arrange(StationCode, SampleDate)
+  arrange(SampleDate, StationCode)
 View(win_field_format)
 
 ###----
@@ -201,5 +172,9 @@ writeData(wb, sheet = "2025", win_field_format, colNames = T)
 saveWorkbook(wb, "C:/Users/schirmer_n/Documents/Data/Guana_data/2025_Guana_masterdata.xlsx", overwrite = T)
 
 #Used to compare formatting before binding
-formats <- summary(arsenal::comparedf(win_field_format, field))
+formats <- summary(arsenal::comparedf(win_format, field_format))
+print(formats)
 formats$vars.nc.table
+
+
+class(win_format$DateReceived)
