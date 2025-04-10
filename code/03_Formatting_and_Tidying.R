@@ -21,7 +21,7 @@ win2 <- win %>%
   filter(StationCode %in% nut_sites)
 
 ###----
-
+print(unique(win2$ComponentLong))
 #Replacing WIN ComponentLong names w/ Masterdata names to make mapping values to Masterdata file easier and applying comments and flags----
 win3 <- win2 %>% 
   mutate(
@@ -143,16 +143,18 @@ win_format <- win_final %>%
   mutate(
     DateAnalyzed = force_tz(DateAnalyzed, tzone = "EST"),
     UNID = as.double(UNID), 
-    Result = as.character(Result)
+    Result = as.character(Result), 
+    DateReceived = lubridate::as_date(DateReceived)
   ) 
 
 
 field_format <- field_ready %>% 
   mutate(
     F_Record = as.character(F_Record), 
-    DateAnalyzed = convertToDateTime(DateAnalyzed, origin = "1900-01-01", tz = "America/Jamaica"), 
+    DateAnalyzed = openxlsx::convertToDateTime(DateAnalyzed, origin = "1900-01-01", tz = "EST"), 
+    SampleDate = force_tz(SampleDate, tzone = "EST")
   )
-
+print(field_format$SampleDate)
 ###----
 
 #moving data from WIN to MD----
