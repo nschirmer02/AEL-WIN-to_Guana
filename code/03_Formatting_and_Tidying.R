@@ -173,9 +173,11 @@ wb <- loadWorkbook("C:/Users/schirmer_n/Documents/Data/Guana_data/2025_Guana_mas
 writeData(wb, sheet = "2025", win_field_format, colNames = T)
 saveWorkbook(wb, "C:/Users/schirmer_n/Documents/Data/Guana_data/2025_Guana_masterdata.xlsx", overwrite = T)
 
-#Used to compare formatting before binding
+##Used to compare formatting before binding
+#generates a table displaying all differences between two data frames x = win_format y = field_format
 formats <- summary(arsenal::comparedf(win_format, field_format))
 print(formats)
+#specifies the component of the table containing information about column type formatting
 formats$vars.nc.table
 
 
