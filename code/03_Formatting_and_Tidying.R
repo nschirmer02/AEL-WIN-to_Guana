@@ -16,20 +16,21 @@ win2 <- win %>%
          AnalysisMethod = 'Analysis Method',
          ActivityType = 'Activity Type', 
          SampleDate = 'Activity Start Date Time', 
-         DateAnalyzed = 'Analysis Date Time'
+         DateAnalyzed = 'Analysis Date Time', 
+         SampleFraction = 'Sample Fraction'
   ) %>% 
   filter(StationCode %in% nut_sites)
 
 ###----
-print(unique(win2$ComponentLong))
+
 #Replacing WIN ComponentLong names w/ Masterdata names to make mapping values to Masterdata file easier and applying comments and flags----
 win3 <- win2 %>% 
   mutate(
          ComponentLong = case_when(
                                    ComponentLong == "Ammonia (N)" ~ "Ammonium, Filtered", 
                                    ComponentLong == "Enterococci (MPN)" ~ "Enterococcus", 
-                                   ComponentLong == "Nitrogen- Total Kjeldahl" & 'Sample Fraction' == "Dissolved" ~ "Total Kjeldahl Nitrogen Filtered", 
-                                   ComponentLong == "Nitrogen- Total Kjeldahl" & 'Sample Fraction' == "Total" ~ "Total Kjeldahl Nitrogen", 
+                                   ComponentLong == "Nitrogen- Total Kjeldahl" & SampleFraction == "Dissolved" ~ "Total Kjeldahl Nitrogen Filtered", 
+                                   ComponentLong == "Nitrogen- Total Kjeldahl" & SampleFraction == "Total" ~ "Total Kjeldahl Nitrogen", 
                                    ComponentLong == "Chlorophyll a- uncorrected" ~ "Chlorophyll a, Uncorrected (Trichromatic)", 
                                    ComponentLong == "Chlorophyll a- corrected" ~ "Chlorophyll a, Corrected (Monochromatic)", 
                                    ComponentLong == "Orthophosphate (P)" ~ "Orthophosphate", 
@@ -39,8 +40,8 @@ win3 <- win2 %>%
         
          ComponentShort = case_when(ComponentLong == "Ammonium, Filtered" ~ "NH4F", 
                                     ComponentLong == "Enterococcus" ~ "ENTERO", 
-                                    ComponentLong == "Total Kjeldahl Nitrogen Filtered" & 'Sample Fraction' == "Dissolved" ~ "TKNF", 
-                                    ComponentLong == "Total Kjeldahl Nitrogen" & 'Sample Fraction' == "Total" ~ "TKN", 
+                                    ComponentLong == "Total Kjeldahl Nitrogen Filtered" & SampleFraction == "Dissolved" ~ "TKNF", 
+                                    ComponentLong == "Total Kjeldahl Nitrogen" & SampleFraction == "Total" ~ "TKN", 
                                     ComponentLong == "Chlorophyll a, Uncorrected (Trichromatic)" ~ "CHLa_UnC", 
                                     ComponentLong == "Chlorophyll a, Corrected (Monochromatic)" ~ "CHLa_C", 
                                     ComponentLong == "Orthophosphate" ~ "PO4", 
@@ -72,7 +73,7 @@ win3 <- win2 %>%
          
   )
 
-###----
+###----s
 
 #Merging Result.Comments with ResultsQualifier----
 ##If there are any other values in the Result.Comments column copy the below code and replace "" values with the code
@@ -154,7 +155,7 @@ field_format <- field_ready %>%
     DateAnalyzed = openxlsx::convertToDateTime(DateAnalyzed, origin = "1900-01-01", tz = "EST"), 
     SampleDate = force_tz(SampleDate, tzone = "EST")
   )
-print(field_format$SampleDate)
+
 ###----
 
 #moving data from WIN to MD----
@@ -163,7 +164,7 @@ win_field$StationCode <- as.character(win_field$StationCode)
 
 #arranging rows to conform with previous formatting
 win_field_format <- win_field %>% 
-  arrange(SampleDate, StationCode)
+  arrange(SampleDate, StationCode, ActivityType)
 View(win_field_format)
 
 ###----
@@ -181,4 +182,3 @@ print(formats)
 formats$vars.nc.table
 
 
-class(win_format$DateReceived)
