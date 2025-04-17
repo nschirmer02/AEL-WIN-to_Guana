@@ -169,10 +169,16 @@ View(win_field_format)
 
 ###----
 
+##Setting number formatting
+#Excel numeric formatting is not as strict as R's numeric formatting, so to get around the issue of having characters 
+#in the Result column (from wind direction readings) we will try to use openxlsx createStyle() to set an excel number formatting
+sty <- createStyle(numFmt = "0.00")
+
 #Updating old Masterdata with updated data----
-wb <- loadWorkbook("C:/Users/schirmer_n/Documents/Data/Guana_data/2025_Guana_masterdata.xlsx")
+wb <- loadWorkbook("C:/Users/schirmer_n/Documents/Data/Guana_data/2025_Guana_masterdata_NS.xlsx")
 writeData(wb, sheet = "2025", win_field_format, colNames = T)
-saveWorkbook(wb, "C:/Users/schirmer_n/Documents/Data/Guana_data/2025_Guana_masterdata.xlsx", overwrite = T)
+addStyle(wb, sheet = "2025", style = sty, rows = nrow(win_field$Result), cols = 8, gridExpand = T)
+saveWorkbook(wb, "C:/Users/schirmer_n/Documents/Data/Guana_data/2025_Guana_masterdata_NS_output.xlsx", overwrite = T)
 
 ##Used to compare formatting before binding
 #generates a table displaying all differences between two data frames x = win_format y = field_format
