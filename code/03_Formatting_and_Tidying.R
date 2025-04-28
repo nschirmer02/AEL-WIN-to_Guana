@@ -2,6 +2,7 @@
 win <- readxl::read_excel(here::here("data", "02.2025.WIN.xlsx"), 1)
 field <- readxl::read_excel(here::here("data", "2025.Field.xlsx"), 1)
 
+here::here()
 #Renaming columns in WIN data to names used in Masterdata and filtering non-sample data from lab data----
 nut_sites <- unique(field$StationCode[!field$StationCode %in% c("GTMGR1NUT", "GTMGL4NUT")])
 
@@ -82,6 +83,7 @@ win3$ResultsQualifier[win3$'Result Comments' == "Q"] <- "Q"
 
 win4 <- win3 %>% 
   mutate(
+    #using case_when statements to generate a Flag column to generate CDMO style flags based on the lab generated ResultsQualifier column
     Flag = case_when(
                      ResultsQualifier == "U" ~ "<-4>[SBL]", 
                      ResultsQualifier == "I" ~ "<0>", 
@@ -89,7 +91,7 @@ win4 <- win3 %>%
                      ResultsQualifier == "Q" ~ "<1>(CHB)", 
                      ResultsQualifier == "J4" ~ "<1>[SRD]"), 
     
-    
+    #using case_when statements to generate comments explaining the use of the code
     TestComments = case_when(ResultsQualifier == "U" ~ "The compound was analyzed for but not detected", 
                              ResultsQualifier == "I" ~ "The reported value is between the laboratory method detection limit and the laboratory practical quantitation limit.", 
                              ResultsQualifier == "J4" ~ "The RPD in the replicate sample duplicate was outside control criteria. Estimated result",
@@ -165,19 +167,17 @@ win_field$StationCode <- as.character(win_field$StationCode)
 #arranging rows to conform with previous formatting
 win_field_format <- win_field %>% 
   arrange(SampleDate, StationCode, ActivityType)
-View(win_field_format)
 
 ###----
 
 ##Setting number formatting
 #Excel numeric formatting is not as strict as R's numeric formatting, so to get around the issue of having characters 
 #in the Result column (from wind direction readings) we will try to use openxlsx createStyle() to set an excel number formatting
-sty <- createStyle(numFmt = "0.00")
+
 
 #Updating old Masterdata with updated data----
 wb <- loadWorkbook("C:/Users/schirmer_n/Documents/Data/Guana_data/2025_Guana_masterdata_NS.xlsx")
 writeData(wb, sheet = "2025", win_field_format, colNames = T)
-addStyle(wb, sheet = "2025", style = sty, rows = nrow(win_field$Result), cols = 8, gridExpand = T)
 saveWorkbook(wb, "C:/Users/schirmer_n/Documents/Data/Guana_data/2025_Guana_masterdata_NS_output.xlsx", overwrite = T)
 
 ##Used to compare formatting before binding
@@ -187,4 +187,4 @@ print(formats)
 #specifies the component of the table containing information about column type formatting
 formats$vars.nc.table
 
-
+print(nrow(win_field_format))
