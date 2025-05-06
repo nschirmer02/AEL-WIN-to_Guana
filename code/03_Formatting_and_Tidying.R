@@ -1,12 +1,14 @@
 #Loading in AEL WIN data and GTMNERR Masterdata
 win <- readxl::read_excel(here::here("data", "02.2025.WIN.xlsx"), 1)
 field <- readxl::read_excel(here::here("data", "2025.Field.xlsx"), 1)
-
-here::here()
-#Renaming columns in WIN data to names used in Masterdata and filtering non-sample data from lab data----
-nut_sites <- unique(field$StationCode[!field$StationCode %in% c("GTMGR1NUT", "GTMGL4NUT")])
+mstr_input <- "C:/Users/schirmer_n/Documents/Data/Guana_data/2025_Guana_masterdata_NS.xlsx"
+mstr_output <- "C:/Users/schirmer_n/Documents/Data/Guana_data/2025_Guana_masterdata_NS_output.xlsx"
+##Renaming columns in WIN data to names used in Masterdata and filtering non-sample data from lab data----
+#input 
+nut_sites <- c("GTMGRNUT", "GTMRNNUT", "GTMLSNUT", "GTMLMNUT", "GTMGL2NUT", "GTMMKNUT")
 
 win2 <- win %>% 
+  #rename function, with replacement name on the left side, and old name on the right side
   rename(StationCode = 'Monitoring Location ID',
          ComponentLong = 'Org Analyte Name',
          Result = 'Org Result Value',
@@ -20,6 +22,7 @@ win2 <- win %>%
          DateAnalyzed = 'Analysis Date Time', 
          SampleFraction = 'Sample Fraction'
   ) %>% 
+  #filter function to remove all sites not found on the nut_sites list 
   filter(StationCode %in% nut_sites)
 
 ###----
@@ -77,7 +80,7 @@ win3 <- win2 %>%
 ###----s
 
 #Merging Result.Comments with ResultsQualifier----
-##If there are any other values in the Result.Comments column copy the below code and replace "" values with the code
+##If there are any other values in the Result.Comments column copy the below code and add the new qualifier in the brackets and to the right of the <-
 win3$ResultsQualifier[win3$'Result Comments' == "J4"] <- "J4"
 win3$ResultsQualifier[win3$'Result Comments' == "Q"] <- "Q"
 
@@ -87,9 +90,10 @@ win4 <- win3 %>%
     Flag = case_when(
                      ResultsQualifier == "U" ~ "<-4>[SBL]", 
                      ResultsQualifier == "I" ~ "<0>", 
-                     ResultsQualifier == "" ~ "<0>", 
                      ResultsQualifier == "Q" ~ "<1>(CHB)", 
                      ResultsQualifier == "J4" ~ "<1>[SRD]"), 
+    
+    Flag = replace(Flag, is.na(ResultsQualifier), "<0>"), 
     
     #using case_when statements to generate comments explaining the use of the code
     TestComments = case_when(ResultsQualifier == "U" ~ "The compound was analyzed for but not detected", 
@@ -108,7 +112,6 @@ field_ready <- field %>%
   )
 
 ###----
-
 #Selecting and ordering columns so that windata4 is in the same format as MasterData file----
 win_final <- win4 %>% 
   select(UNID, 
@@ -165,20 +168,28 @@ win_field <- dplyr::bind_rows(win_format, field_format)
 win_field$StationCode <- as.character(win_field$StationCode)
 
 #arranging rows to conform with previous formatting
+#using sprintf() to manually assign formatting to all numerical values within the Results column to correct for floating point precision problems
 win_field_format <- win_field %>% 
-  arrange(SampleDate, StationCode, ActivityType)
+  arrange(SampleDate, StationCode, ActivityType) %>% 
+  mutate(
+    
+    UNID = seq.int(nrow(win_field_format)), 
+    
+    Result = ifelse(
+      suppressWarnings(!is.na(as.numeric(Result))), 
+      sprintf("%.2f", as.numeric(Result)), 
+      Result
+      )
+  ) 
 
 ###----
 
-##Setting number formatting
-#Excel numeric formatting is not as strict as R's numeric formatting, so to get around the issue of having characters 
-#in the Result column (from wind direction readings) we will try to use openxlsx createStyle() to set an excel number formatting
 
 
 #Updating old Masterdata with updated data----
-wb <- loadWorkbook("C:/Users/schirmer_n/Documents/Data/Guana_data/2025_Guana_masterdata_NS.xlsx")
+wb <- loadWorkbook(mstr_input)
 writeData(wb, sheet = "2025", win_field_format, colNames = T)
-saveWorkbook(wb, "C:/Users/schirmer_n/Documents/Data/Guana_data/2025_Guana_masterdata_NS_output.xlsx", overwrite = T)
+saveWorkbook(wb, mstr_output, overwrite = T)
 
 ##Used to compare formatting before binding
 #generates a table displaying all differences between two data frames x = win_format y = field_format
@@ -187,4 +198,3 @@ print(formats)
 #specifies the component of the table containing information about column type formatting
 formats$vars.nc.table
 
-print(nrow(win_field_format))
