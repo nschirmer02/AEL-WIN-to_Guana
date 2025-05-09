@@ -1,11 +1,9 @@
 #Loading in AEL WIN data and GTMNERR Masterdata
-win <- readxl::read_excel(here::here("data", "02.2025.WIN.xlsx"), 1)
-field <- readxl::read_excel(here::here("data", "2025.Field.xlsx"), 1)
-mstr_input <- "C:/Users/schirmer_n/Documents/Data/Guana_data/2025_Guana_masterdata_NS.xlsx"
+mstr_input <- "C:/Users/schirmer_n/Documents/Data/Guana_data/2025_Guana_masterdata_NS(1).xlsx"
 mstr_output <- "C:/Users/schirmer_n/Documents/Data/Guana_data/2025_Guana_masterdata_NS_output.xlsx"
 ##Renaming columns in WIN data to names used in Masterdata and filtering non-sample data from lab data----
 #input 
-nut_sites <- c("GTMGRNUT", "GTMRNNUT", "GTMLSNUT", "GTMLMNUT", "GTMGL2NUT", "GTMMKNUT")
+nut_sites
 
 win2 <- win %>% 
   #rename function, with replacement name on the left side, and old name on the right side
@@ -53,7 +51,7 @@ win3 <- win2 %>%
                                     ComponentLong == "Total Phosphorus" ~ "TP"
                                     ), 
          
-         SampleDate = lubridate::force_tz(SampleDate, tzone = "EST"), 
+         SampleDate = lubridate::force_tz(SampleDate, tzone = "America/New_York"), 
          
          Laboratory = "AEL", 
          
@@ -104,13 +102,6 @@ win4 <- win3 %>%
     )
 ###----
 
-#Adding Columns needed to bind field and WIN----
-
-field_ready <- field %>% 
-  rename(
-    'Lab Accreditation Authority' = 'Lab Accredidation Authority'
-  )
-
 ###----
 #Selecting and ordering columns so that windata4 is in the same format as MasterData file----
 win_final <- win4 %>% 
@@ -147,18 +138,14 @@ win_final <- win4 %>%
 #Converting columns into POSIXct format to allow for binding of field_ready and win_final dataframes----
 win_format <- win_final %>% 
   mutate(
-    DateAnalyzed = force_tz(DateAnalyzed, tzone = "EST"),
     UNID = as.double(UNID), 
     Result = as.character(Result), 
-    DateReceived = lubridate::as_date(DateReceived)
+    DateReceived = as_date(DateReceived)
   ) 
 
-
-field_format <- field_ready %>% 
+field_format <- field %>% 
   mutate(
-    F_Record = as.character(F_Record), 
-    DateAnalyzed = openxlsx::convertToDateTime(DateAnalyzed, origin = "1900-01-01", tz = "EST"), 
-    SampleDate = force_tz(SampleDate, tzone = "EST")
+    F_Record = as.character(F_Record)
   )
 
 ###----
@@ -169,32 +156,33 @@ win_field$StationCode <- as.character(win_field$StationCode)
 
 #arranging rows to conform with previous formatting
 #using sprintf() to manually assign formatting to all numerical values within the Results column to correct for floating point precision problems
+
 win_field_format <- win_field %>% 
+ 
   arrange(SampleDate, StationCode, ActivityType) %>% 
+  
   mutate(
     
-    UNID = seq.int(nrow(win_field_format)), 
+    UNID = seq.int(nrow(win_field)), 
     
     Result = ifelse(
       suppressWarnings(!is.na(as.numeric(Result))), 
       sprintf("%.2f", as.numeric(Result)), 
       Result
       )
-  ) 
+  )   
 
+print(win_field_format$SampleDate[703])
 ###----
 
-
-
 #Updating old Masterdata with updated data----
-wb <- loadWorkbook(mstr_input)
+wb <- loadWorkbook(mstr_output)
 writeData(wb, sheet = "2025", win_field_format, colNames = T)
-saveWorkbook(wb, mstr_output, overwrite = T)
-
+saveWorkbook(wb, here::here("data", "test123.xlsx"), overwrite = T)
+file.rename(here::here("data", "test123.xlsx"), mstr_output)
 ##Used to compare formatting before binding
 #generates a table displaying all differences between two data frames x = win_format y = field_format
 formats <- summary(arsenal::comparedf(win_format, field_format))
 print(formats)
 #specifies the component of the table containing information about column type formatting
-formats$vars.nc.table
 

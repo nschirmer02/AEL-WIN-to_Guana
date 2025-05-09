@@ -1,18 +1,15 @@
-#Loading in AEL WIN data and GTMNERR Masterdata
-win <- readxl::read_excel(here::here("data", "02.2025.WIN.xlsx"), 1)
-field <- readxl::read_excel(here::here("data", "2025.Field.xlsx"), 1)
-
-###RUN FIRST: check if there are any Result Comments, StationCodes, or Results Qualifiers not recognized in the code----
+#Loading in AEL WIN data and GTMNERR Masterdata into Rproj
+win <- readxl::read_excel("C:/Users/schirmer_n/Documents/Data/Guana_data/2025.04_WIN.xlsx", 1)
+field <- readxl::read_excel("C:/Users/schirmer_n/Documents/Data/Guana_data/2025_Guana_masterdata_NS(1).xlsx", "2025")
 #StationCodes = GTMGRNUT, GTMRNNUT, GTMLSNUT, GTMLMNUT, GTMGL2NUT, GTMMKNUT. Any misspellings or inclusions of other sites may generate errors
 #Filters out non-Sample location IDs 
-print(substr(win$`Monitoring Location ID`, 1, 3) == "GTM" & substr(win$`Monitoring Location ID`, nchar(win$`Monitoring Location ID`) -2, nchar(win$`Monitoring Location ID`)) == "NUT")
 
 win_gtm <- win %>% 
   filter(substr(win$`Monitoring Location ID`, 1, 3) == "GTM" & substr(win$`Monitoring Location ID`, nchar(win$`Monitoring Location ID`) - 2, nchar(win$`Monitoring Location ID`)) == "NUT")
 
 #Displays all StationCodes
-unique(win_gtm$'Monitoring Location ID')
-unique(win_gtm$'Monitoring Location ID')
+nut_sites <- unique(win_gtm$'Monitoring Location ID')
+print(nut_sites)
 
 #Results Comments = "J4" - The RPD in the replicate sample duplicate was outside control criteria. Estimated Result / "Q" - Exceeded sample time 
 print(unique(win$'Result Comments'))
