@@ -101,7 +101,8 @@ win4 <- win3 %>%
     
     )
 ###----
-
+print(win$`Analysis Date Time`[1])
+print(lubridate::force_tz(win$`Analysis Date Time`[1], tzone = "America/New_York"))
 ###----
 #Selecting and ordering columns so that windata4 is in the same format as MasterData file----
 win_final <- win4 %>% 

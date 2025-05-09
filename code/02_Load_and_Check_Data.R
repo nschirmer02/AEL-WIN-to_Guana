@@ -1,6 +1,6 @@
 #Loading in AEL WIN data and GTMNERR Masterdata into Rproj
 win <- readxl::read_excel("C:/Users/schirmer_n/Documents/Data/Guana_data/2025.04_WIN.xlsx", 1)
-field <- readxl::read_excel("C:/Users/schirmer_n/Documents/Data/Guana_data/2025_Guana_masterdata_NS(1).xlsx", "2025")
+field <- readxl::read_excel(mstr_output, "2025")
 #StationCodes = GTMGRNUT, GTMRNNUT, GTMLSNUT, GTMLMNUT, GTMGL2NUT, GTMMKNUT. Any misspellings or inclusions of other sites may generate errors
 #Filters out non-Sample location IDs 
 
